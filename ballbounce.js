@@ -18,11 +18,14 @@ function initializeState() {
     state.room = {};
     state.room.width = 300;
     state.room.height = 300;
+
+    state.totalEnergy = 0;
     return state;
 }
 
 function update(state, dt) {
-    console.log("updating");
+    state.totalEnergy = 0;
+
     for (var i = state.balls.length - 1; i >= 0; i--) {
         var ball = state.balls[i];
         // F = mg for gravity pulling down a point mass. We equate that force
@@ -44,6 +47,9 @@ function update(state, dt) {
             ball.y = state.room.height - over - ball.r;
             ball.dy *= -1;
         }
+
+        state.totalEnergy += .5 * ball.m * (ball.dx * ball.dx + ball.dy * ball.dy);
+        state.totalEnergy += (state.room.height - ball.y) * ball.m * g;
     }
 }
 
@@ -68,4 +74,9 @@ function draw(canvas, state) {
         var ball = state.balls[i];
         drawBall(ctx, ball.x, ball.y, ball.r);
     }
+
+    // Draw the energy meter
+    ctx.fillStyle = "rgb(0,0,0)"
+    ctx.font = "30px Arial";
+    ctx.fillText("Energy:" + Math.round(state.totalEnergy, 2) + " J" ,10,50);
 }

@@ -27,7 +27,14 @@
   <script type="text/javascript" src="ballbounce.js"></script>
   <script>
     var canvas = $("#canvas")[0];
-    draw(canvas);
+    var state = initializeState();
+    var dt = 0.2;
+
+    setInterval(function() {
+      update(state, dt);
+      draw(canvas, state);
+    }, 50);
+
   </script>
 </body>
 </html>

@@ -35,10 +35,12 @@ function update(state, dt) {
         var ddy = -g;
         // ^ when we're handling collisions, there will be more terms
         ball.dy -= ddy * dt;
-        ball.y += ball.dy * dt;
+        ball.y += ball.dy * dt + .5 * ddy * dt * dt;  // <- conserves energy!
+        // ball.y += ball.dy * dt; // <- Doesn't conserve energy!
 
         ball.dx -= ddx * dt;
-        ball.x += ball.dx * dt;
+        ball.x += ball.dx * dt + .5 * ddx * dt * dt;
+        // ball.x += ball.dx * dt;
 
         // Collision detection against the ground
         if (ball.y + ball.r > state.room.height) {
@@ -49,7 +51,7 @@ function update(state, dt) {
         }
 
         state.totalEnergy += .5 * ball.m * (ball.dx * ball.dx + ball.dy * ball.dy);
-        state.totalEnergy += (state.room.height - ball.y) * ball.m * g;
+        state.totalEnergy += (state.room.height - ball.y - ball.r) * ball.m * g;
     }
 }
 

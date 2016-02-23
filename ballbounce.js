@@ -28,27 +28,41 @@ function update(state, dt) {
 
     for (var i = state.balls.length - 1; i >= 0; i--) {
         var ball = state.balls[i];
-        // F = mg for gravity pulling down a point mass. We equate that force
-        // with ma to find acceleration and get:
-        // F = mg = ma --> g = a
-        var ddx = 0;
-        var ddy = -g;
-        // ^ when we're handling collisions, there will be more terms
-        ball.dy -= ddy * dt;
-        ball.y += ball.dy * dt + .5 * ddy * dt * dt;  // <- conserves energy!
-        // ball.y += ball.dy * dt; // <- Doesn't conserve energy!
 
+        // Basic kinetics
+        var ddy = -g;
+        ball.dy -= ddy * dt;
+        var deltaY = ball.dy * dt + .5 * ddy * dt * dt;
+
+        // But if a collision is about to happen, let's do more math
+        if (ball.y + ball.r + deltaY > state.room.height) {
+            // First rewind the change to velocity
+            ball.dy += ddy * dt;
+
+            // h0 is the distance to the ground
+            var h0 = state.room.height - ball.y - ball.r;
+            var v0 = ball.dy;
+            var sqrt = Math.sqrt(v0 * v0 + 2 * g * h0);
+            var ta = (-v0 + sqrt) / g;
+            var tb = (-v0 - sqrt) / g;
+            var tPreCollision = ta > 0 ? ta : tb;
+            var tPostCollision = dt - tPreCollision;
+
+            // v1 is the velocity it'll have at the end of the timestep
+            var v1 = -(v0 + g * (tPreCollision - tPostCollision));
+
+            // h1 is derived using conservation of energy!
+            var h1 = (2 * g * h0 + v0 * v0 - v1 * v1) / (2 * g);
+            ball.dy = v1;
+            ball.y = state.room.height - ball.r - h1;
+        }
+        else {
+            ball.y += deltaY;
+        }
+
+        var ddx = 0;
         ball.dx -= ddx * dt;
         ball.x += ball.dx * dt + .5 * ddx * dt * dt;
-        // ball.x += ball.dx * dt;
-
-        // Collision detection against the ground
-        if (ball.y + ball.r > state.room.height) {
-            // Mirror the ball off the ground
-            var over = ball.y + ball.r - state.room.height;
-            ball.y = state.room.height - over - ball.r;
-            ball.dy *= -1;
-        }
 
         state.totalEnergy += .5 * ball.m * (ball.dx * ball.dx + ball.dy * ball.dy);
         state.totalEnergy += (state.room.height - ball.y - ball.r) * ball.m * g;

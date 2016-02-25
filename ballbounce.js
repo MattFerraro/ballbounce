@@ -8,7 +8,7 @@ function initializeState() {
         var newBall = {};
         newBall.x = i * 50 + 40;
         newBall.y = i * 10 + 30;
-        newBall.dx = 0;
+        newBall.dx = 10;
         newBall.dy = 0;
         newBall.m = 1;
         newBall.r = 20;
@@ -63,6 +63,17 @@ function update(state, dt) {
         var ddx = 0;
         ball.dx -= ddx * dt;
         ball.x += ball.dx * dt + .5 * ddx * dt * dt;
+
+        if (ball.x - ball.r < 0) {
+            var over = ball.x - ball.r
+            ball.x += -2 * over;
+            ball.dx *= -1;
+        }
+        if (ball.x + ball.r > state.room.width) {
+            var over = ball.x + ball.r - state.room.width;
+            ball.x -= 2 * over;
+            ball.dx *= -1;
+        }
 
         state.totalEnergy += .5 * ball.m * (ball.dx * ball.dx + ball.dy * ball.dy);
         state.totalEnergy += (state.room.height - ball.y - ball.r) * ball.m * g;

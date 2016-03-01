@@ -30,16 +30,30 @@
     var state = initializeState();
     var dt = .03;
 
-    var id = setInterval(refresh, 10);
+    // var id = setInterval(repaint, 1);
+    var id2 = setInterval(updateWorld, 1);
 
-    function refresh() {
+    var startTime = Date.now();
+    var fps = 0;
+    var avg = 0;
+
+    function updateWorld() {
+      fps++;
       update(state, dt);
-      draw(canvas, state);
-      // if (isNaN(state.balls[0].y)) {
-      //   clearInterval(id);
-      // }
+
+      if (Date.now() > startTime + 1000) {
+        console.log(fps);
+        fps = 0;
+        startTime = Date.now();
+      }
     }
 
+    function repaint() {
+      draw(canvas, state);
+      requestAnimationFrame(repaint);
+    }
+
+    requestAnimationFrame(repaint);
 
   </script>
 </body>

@@ -1,7 +1,6 @@
 var g = 9.8;  // Acceleration due to gravity
-var kWall = 10; // Walls are modelled as linear springs
-var kSpring = 60; // Balls are modelled as springs
-var corWall = .5;
+var kSpring = 160; // Balls are modelled as springs
+var containerSize = 20;
 
 function initializeState() {
     var state = {};
@@ -12,23 +11,28 @@ function initializeState() {
 
     state.balls = [];
 
-    for (var i = 0; i < 21; i++) {
-        for (var j = 0; j < 21; j++) {
+    var ids = 0;
+    for (var i = 0; i < 20; i++) {
+        for (var j = 0; j < 26; j++) {
             var newBall = {};
-            newBall.x = i * 25 + 50 - (j % 2) * 10;
-            newBall.y = j * 25 + 40;
-            newBall.dx = 100;
+            ids++;
+            newBall.id = ids;
+            newBall.x = i * 20 + 50 - (j % 2) * 10;
+            newBall.y = j * 20 + 40;
+            newBall.dx = 10;
             newBall.dy = 0;
             newBall.fx = 0;
             newBall.fy = 0;
             newBall.m = 1;
-            newBall.r = 10;
+            newBall.r = 8;
             state.balls.push(newBall);
         }
     }
 
     for (var i = 0; i < state.room.width / 25; i++) {
         var newBall = {};
+        ids++;
+        newBall.id = ids;
         newBall.x = i * 25 + 0;
         newBall.y = state.room.height;
         newBall.r = 35;
@@ -38,6 +42,8 @@ function initializeState() {
 
     for (var i = 0; i < state.room.width / 25; i++) {
         var newBall = {};
+        ids++;
+        newBall.id = ids;
         newBall.x = i * 25 + 0;
         newBall.y = 0;
         newBall.r = 35;
@@ -47,6 +53,8 @@ function initializeState() {
 
     for (var i = 0; i < state.room.height / 25; i++) {
         var newBall = {};
+        ids++;
+        newBall.id = ids;
         newBall.x = 0;
         newBall.y = i * 25;
         newBall.r = 35;
@@ -56,6 +64,8 @@ function initializeState() {
 
     for (var i = 0; i < state.room.height / 25; i++) {
         var newBall = {};
+        ids++;
+        newBall.id = ids;
         newBall.x = state.room.width;
         newBall.y = i * 25;
         newBall.r = 35;
@@ -63,13 +73,34 @@ function initializeState() {
         state.balls.push(newBall);
     }
 
-    state.totalEnergy = 0;
+    state.containerRows = [];
+    for (var j = 0; j < state.room.height / containerSize; j++) {
+        var containerCols = [];
+
+        for (var i = 0; i < state.room.width / containerSize; i++) {
+            var container = {};
+            containerCols.push(container);
+        }
+
+        state.containerRows.push(containerCols);
+    }
+
+    for (var i = 0; i < state.balls.length; i++) {
+        // Put each ball into an initial container
+        var ball = state.balls[i];
+        var row = Math.floor(ball.y / containerSize);
+        var col = Math.floor(ball.x / containerSize);
+        container[ball.id] = ball;
+    }
+
     return state;
 }
 
 function update(state, dt) {
-    state.totalEnergy = 0;
-    state.springEnergy = 0;
+    var row = 0;
+    var col = 0;
+    var oldRow = 0;
+    var oldCol = 0;
 
     for (var i = 0; i < state.balls.length; i++) {
         var ball = state.balls[i];
@@ -83,6 +114,24 @@ function update(state, dt) {
 
         ball.fy += g * ball.m;
 
+        row = Math.floor(ball.y / containerSize);
+        col = Math.floor(ball.x / containerSize);
+
+        // Check for collisions against all balls in nearby cells
+        var nearbyBalls = [];
+        for (var x = -1; x <= 1; x++) {
+            for (var y = -1; y <= 1; y++) {
+                var container = state.containerRows[row + x][col + y];
+                var values = _.values(container);
+                for (var k = 0; k < values.length; k++) {
+                    nearbyBalls.push(values[k]);
+                }
+            }
+        }
+
+        // if (nearbyBalls.length > 0) {
+        //     // console.log(nearbyBalls);
+        // }
 
         for (var j = 0; j < state.balls.length; j++) {
             // Check for collisions against all other balls
@@ -116,7 +165,8 @@ function update(state, dt) {
             continue;
         }
 
-        var ball = state.balls[i];
+        oldRow = Math.floor(ball.y / containerSize);
+        oldCol = Math.floor(ball.x / containerSize);
 
         ball.fx -= 0.02 * ball.dx;
         ball.fy -= 0.02 * ball.dy;
@@ -134,84 +184,40 @@ function update(state, dt) {
             ball.dy = 0;
             ball.dx = 0;
         }
-        // console.log("hi");
 
+        // if (ball.dy > maxDy) {
+        //     maxDy = ball.dy;
+        // }
+        // if (ball.dx > maxDx) {
+        //     maxDx = ball.dx;
+        // }
+
+        row = Math.floor(ball.y / containerSize);
+        col = Math.floor(ball.x / containerSize);
+
+        if (row != oldRow || col != oldCol) {
+            delete state.containerRows[oldRow][oldCol][ball.id];
+            state.containerRows[row][col][ball.id] = ball;
+        }
     }
 
-        // var deltaY = ball.dy * dt;
-        // ball.yo = ball.y;
-        // But if a collision is about to happen, let's do more math
-        // if (ball.y + ball.r + deltaY > state.room.height) {
-            // // First rewind the change to velocity
-            // ball.dy += ddy * dt;
+    var specialId = 30;
+    var loci = 0;
+    var locj = 0;
+    for (var i = 0; i < state.containerRows.length; i++) {
+        var row = state.containerRows[i];
 
-            // // h0 is the distance to the ground
-            // var h0 = state.room.height - ball.y - ball.r;
-            // var v0 = ball.dy;
-
-            // var sqrtTerm = v0 * v0 + 2 * g * h0;
-
-            // if (sqrtTerm > 0) {
-            //     var sqrt = Math.sqrt(sqrtTerm);
-            //     var ta = (-v0 + sqrt) / g;
-            //     var tb = (-v0 - sqrt) / g;
-            //     var tPreCollision = ta > 0 ? ta : tb;
-            //     var tPostCollision = dt - tPreCollision;
-
-            //     // v1 is the velocity it'll have at the end of the timestep
-            //     var v1 = -(v0 + g * (tPreCollision - tPostCollision));
-
-            //     // h1 is derived using conservation of energy!
-            //     var h1 = (2 * g * h0 + v0 * v0 - v1 * v1) / (2 * g);
-            //     ball.dy = v1 * corWall;
-
-            //     ball.y = state.room.height - ball.r - h1;
-            // }
-            // else {
-            //     ball.dy = -.06;
-            //     ball.y = state.room.height - ball.r - 0.05;
-            // }
-        // }
-        // else {
-        //     ball.y += deltaY;
-        // }
-
-
-        // Let's handle horizontal collisions against vertical walls
-        // by modelling them as forces
-        // for (var j = 0; j < state.verticalWalls.length; j++) {
-        //     var wall = state.verticalWalls[j];
-        //     // Check to see if we're inside the wall
-        //     var rightEdge = ball.x + ball.r;
-        //     var futureRightEdge = rightEdge + ball.dx * dt + .5 * ddx * dt * dt;
-        //     if (futureRightEdge > wall.x && futureRightEdge < wall.x + wall.w) {
-                // Cool, the right edge of the ball will be, at the end of this
-                // time step, bouncing against the left edge of this vertical wall
-                // var tCollision =
-                // var overshyoot = rightEdge - wall.x;
-                // var forceLeft = overshoot * kWall;
-                // ddx += forceLeft;
-
-                // How much energy was gained by transporting into
-                // the wall?
-                // var energyGain = .5 * kWall * overshoot * overshoot;
-                // var Ukx = .5 * ball.m * (ball.dx * ball.dx);
-                // ball.dx = Math.sqrt(2 * Ukx / ball.m);
-        //     }
-        // }
-
-        // ball.dx += ddx * dt;
-        // ball.dy -= ddy * dt;
-
-        // ball.xo = ball.x;
-        // ball.x += ball.dx * dt + .5 * ddx * dt * dt;
-
-        // if (ball.x + ball.r > state.room.width) {
-        //     ball.x = state.room.width - ball.r - 0.01;
-        // }
-
-        // state.totalEnergy += .5 * ball.m * (ball.dx * ball.dx + ball.dy * ball.dy);
-        // state.totalEnergy += (state.room.height - ball.y - ball.r) * ball.m * g;
+        for (var j = 0; j < row.length; j++) {
+            var keys = _.keys(row[j]);
+            if (keys.indexOf(specialId) != -1)
+            {
+                loci = i;
+                locj = j;
+            }
+        }
+    }
+    console.log("loci", loci);
+    console.log("locj", locj);
 }
 
 function drawBall(ctx, x, y, r, color) {
@@ -235,6 +241,9 @@ function draw(canvas, state) {
         var ball = state.balls[i];
         if (ball.fixed == true) {
             drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(255, 0, 0)');
+        }
+        else if (ball.id == 30) {
+            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(0, 0, 0)');
         }
         else {
             drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(0, 255, 0)');

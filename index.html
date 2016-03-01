@@ -14,7 +14,7 @@
       </div>
       <div class="row">
   			<div class="col-md-12" style="background-color:rgb(240,240,240)">
-          <canvas width=300 height=300 id="canvas">
+          <canvas width=600 height=600 id="canvas">
           </canvas>
   			</div>
 
@@ -28,12 +28,12 @@
   <script>
     var canvas = $("#canvas")[0];
     var state = initializeState();
-    var dt = 0.2;
+    var dt = 0.04;
 
     setInterval(function() {
       update(state, dt);
       draw(canvas, state);
-    }, 50);
+    }, 20);
 
   </script>
 </body>

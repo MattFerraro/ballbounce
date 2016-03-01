@@ -1,70 +1,67 @@
 var g = 9.8;  // Acceleration due to gravity
 var kWall = 10; // Walls are modelled as linear springs
 var kSpring = 60; // Balls are modelled as springs
-var corWall = .98;
+var corWall = .5;
 
 function initializeState() {
     var state = {};
+
+    state.room = {};
+    state.room.width = 1000;
+    state.room.height = 800;
+
     state.balls = [];
 
-    for (var i = 0; i < 9; i++) {
-        for (var j = 0; j < 7; j++) {
+    for (var i = 0; i < 21; i++) {
+        for (var j = 0; j < 21; j++) {
             var newBall = {};
-            newBall.x = i * 50 + 140;
-            newBall.y = j * 50 + 230;
-            newBall.dx = 10;
+            newBall.x = i * 25 + 50 - (j % 2) * 10;
+            newBall.y = j * 25 + 40;
+            newBall.dx = 100;
             newBall.dy = 0;
+            newBall.fx = 0;
+            newBall.fy = 0;
             newBall.m = 1;
-            newBall.r = 20;
+            newBall.r = 10;
             state.balls.push(newBall);
         }
     }
-    // var topBall = {};
-    // topBall.x = 170;
-    // topBall.xo = topBall.x;
-    // topBall.y = 80;
-    // topBall.yo = topBall.y;
-    // topBall.dx = 0;
-    // topBall.dy = 0;
-    // topBall.m = 1;
-    // topBall.r = 20;
-    // state.balls.push(topBall);
 
-    // var bottomLeftBall = {};
-    // bottomLeftBall.x = 150 - 25;
-    // bottomLeftBall.y = 130;
-    // bottomLeftBall.dx = 0;
-    // bottomLeftBall.dy = 0;
-    // bottomLeftBall.m = 1;
-    // bottomLeftBall.r = 20;
-    // state.balls.push(bottomLeftBall);
+    for (var i = 0; i < state.room.width / 25; i++) {
+        var newBall = {};
+        newBall.x = i * 25 + 0;
+        newBall.y = state.room.height;
+        newBall.r = 35;
+        newBall.fixed = true;
+        state.balls.push(newBall);
+    }
 
-    // var bottomRightBall = {};
-    // bottomRightBall.x = 150;
-    // bottomRightBall.xo = bottomRightBall.x;
-    // bottomRightBall.y = 130;
-    // bottomRightBall.yo = bottomRightBall.y;
-    // bottomRightBall.dx = 0;
-    // bottomRightBall.dy = 0;
-    // bottomRightBall.m = 1;
-    // bottomRightBall.r = 20;
-    // state.balls.push(bottomRightBall);
+    for (var i = 0; i < state.room.width / 25; i++) {
+        var newBall = {};
+        newBall.x = i * 25 + 0;
+        newBall.y = 0;
+        newBall.r = 35;
+        newBall.fixed = true;
+        state.balls.push(newBall);
+    }
 
+    for (var i = 0; i < state.room.height / 25; i++) {
+        var newBall = {};
+        newBall.x = 0;
+        newBall.y = i * 25;
+        newBall.r = 35;
+        newBall.fixed = true;
+        state.balls.push(newBall);
+    }
 
-    state.room = {};
-    state.room.width = 600;
-    state.room.height = 600;
-
-    wallThickness = 10;
-    state.verticalWalls = [
-        {x: 0, y: 0, w: wallThickness, h: state.room.height},
-        {x: state.room.width - wallThickness, y: 0, w: wallThickness, h: state.room.height}
-    ];
-
-    state.horizontalWalls = [
-        {x: 0, y: 0, w: state.room.width, h: wallThickness},
-        {x: 0, y: state.room.height - wallThickness, w: state.room.width, h: wallThickness},
-    ];
+    for (var i = 0; i < state.room.height / 25; i++) {
+        var newBall = {};
+        newBall.x = state.room.width;
+        newBall.y = i * 25;
+        newBall.r = 35;
+        newBall.fixed = true;
+        state.balls.push(newBall);
+    }
 
     state.totalEnergy = 0;
     return state;
@@ -77,11 +74,15 @@ function update(state, dt) {
     for (var i = 0; i < state.balls.length; i++) {
         var ball = state.balls[i];
 
-        var ddy = -g;
-        var ddx = 0;
+        if (ball.fixed == true) {
+            continue;
+        }
 
-        var dxDamp = 1;
-        var dyDamp = 1;
+        ball.fx = 0;
+        ball.fy = 0;
+
+        ball.fy += g * ball.m;
+
 
         for (var j = 0; j < state.balls.length; j++) {
             // Check for collisions against all other balls
@@ -97,57 +98,84 @@ function update(state, dt) {
                     // Cool, a ball-on-ball collision is happening
                     var compressionDist = minDist - Math.sqrt(distSquared);
                     var fSpring = compressionDist * kSpring;
-                    state.springEnergy += .5 * kSpring * compressionDist * compressionDist;
                     var alpha = Math.atan2(deltaY, deltaX);
                     var fSpringX = Math.cos(alpha) * fSpring;
                     var fSpringY = Math.sin(alpha) * fSpring;
 
-                    dxDamp *= .98;
-                    dyDamp *= .98;
-
-                    ddx -= fSpringX / ball.m;
-                    ddy += fSpringY / ball.m;
+                    ball.fx -= fSpringX;
+                    ball.fy -= fSpringY;
                 }
             }
         }
+    }
+
+    for (var i = 0; i < state.balls.length; i++) {
+        var ball = state.balls[i];
+
+        if (ball.fixed == true) {
+            continue;
+        }
+
+        var ball = state.balls[i];
+
+        ball.fx -= 0.02 * ball.dx;
+        ball.fy -= 0.02 * ball.dy;
+
+        var ddx = ball.fx / ball.m;
+        var ddy = ball.fy / ball.m;
 
         ball.dx += ddx * dt;
-        ball.dy -= ddy * dt;
+        ball.dy += ddy * dt;
 
-        ball.dx *= dxDamp;
-        ball.dy *= dxDamp;
+        ball.x += ball.dx * dt;
+        ball.y += ball.dy * dt;
 
-        var deltaY = ball.dy * dt + .5 * ddy * dt * dt;
-        ball.yo = ball.y;
+        if (ball.dy > 10000 || ball.dx > 10000) {
+            ball.dy = 0;
+            ball.dx = 0;
+        }
+        // console.log("hi");
+
+    }
+
+        // var deltaY = ball.dy * dt;
+        // ball.yo = ball.y;
         // But if a collision is about to happen, let's do more math
-        if (ball.y + ball.r + deltaY > state.room.height) {
-            // First rewind the change to velocity
-            ball.dy += ddy * dt;
+        // if (ball.y + ball.r + deltaY > state.room.height) {
+            // // First rewind the change to velocity
+            // ball.dy += ddy * dt;
 
-            // h0 is the distance to the ground
-            var h0 = state.room.height - ball.y - ball.r;
-            var v0 = ball.dy;
-            var sqrt = Math.sqrt(v0 * v0 + 2 * g * h0);
-            var ta = (-v0 + sqrt) / g;
-            var tb = (-v0 - sqrt) / g;
-            var tPreCollision = ta > 0 ? ta : tb;
-            var tPostCollision = dt - tPreCollision;
+            // // h0 is the distance to the ground
+            // var h0 = state.room.height - ball.y - ball.r;
+            // var v0 = ball.dy;
 
-            // v1 is the velocity it'll have at the end of the timestep
-            var v1 = -(v0 + g * (tPreCollision - tPostCollision));
+            // var sqrtTerm = v0 * v0 + 2 * g * h0;
 
-            // Multiply by a loss
-            v1 *= corWall;
+            // if (sqrtTerm > 0) {
+            //     var sqrt = Math.sqrt(sqrtTerm);
+            //     var ta = (-v0 + sqrt) / g;
+            //     var tb = (-v0 - sqrt) / g;
+            //     var tPreCollision = ta > 0 ? ta : tb;
+            //     var tPostCollision = dt - tPreCollision;
 
-            // h1 is derived using conservation of energy!
-            var h1 = (2 * g * h0 + v0 * v0 - v1 * v1) / (2 * g);
-            ball.dy = v1;
+            //     // v1 is the velocity it'll have at the end of the timestep
+            //     var v1 = -(v0 + g * (tPreCollision - tPostCollision));
 
-            ball.y = state.room.height - ball.r - h1;
-        }
-        else {
-            ball.y += deltaY;
-        }
+            //     // h1 is derived using conservation of energy!
+            //     var h1 = (2 * g * h0 + v0 * v0 - v1 * v1) / (2 * g);
+            //     ball.dy = v1 * corWall;
+
+            //     ball.y = state.room.height - ball.r - h1;
+            // }
+            // else {
+            //     ball.dy = -.06;
+            //     ball.y = state.room.height - ball.r - 0.05;
+            // }
+        // }
+        // else {
+        //     ball.y += deltaY;
+        // }
+
 
         // Let's handle horizontal collisions against vertical walls
         // by modelling them as forces
@@ -172,42 +200,28 @@ function update(state, dt) {
         //     }
         // }
 
-        ball.xo = ball.x;
-        ball.x += ball.dx * dt + .5 * ddx * dt * dt;
+        // ball.dx += ddx * dt;
+        // ball.dy -= ddy * dt;
 
-        if (ball.x - ball.r < 0) {
-            var over = ball.x - ball.r
-            ball.x += -2 * over;
-            ball.dx *= -corWall;
-        }
-        if (ball.x + ball.r > state.room.width) {
-            var over = ball.x + ball.r - state.room.width;
-            ball.x -= 2 * over;
-            ball.dx *= -corWall;
-        }
+        // ball.xo = ball.x;
+        // ball.x += ball.dx * dt + .5 * ddx * dt * dt;
 
-        state.totalEnergy += .5 * ball.m * (ball.dx * ball.dx + ball.dy * ball.dy);
-        state.totalEnergy += (state.room.height - ball.y - ball.r) * ball.m * g;
-    }
-    state.totalEnergy += .5 * state.springEnergy;
-    if (state.springEnergy > 0) {
-        // console.log(.5 * state.springEnergy);
-    }
+        // if (ball.x + ball.r > state.room.width) {
+        //     ball.x = state.room.width - ball.r - 0.01;
+        // }
+
+        // state.totalEnergy += .5 * ball.m * (ball.dx * ball.dx + ball.dy * ball.dy);
+        // state.totalEnergy += (state.room.height - ball.y - ball.r) * ball.m * g;
 }
 
-function drawBall(ctx, x, y, r) {
+function drawBall(ctx, x, y, r, color) {
     ctx.beginPath();
     ctx.arc(x, y, r, 0, 2 * Math.PI, false);
-    ctx.fillStyle = 'green';
+    ctx.fillStyle = color;
     ctx.fill();
     ctx.lineWidth = 5;
     ctx.strokeStyle = '#003300';
     ctx.stroke();
-}
-
-function drawWall(ctx, x, y, w, h, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, w, h);
 }
 
 function draw(canvas, state) {
@@ -219,22 +233,13 @@ function draw(canvas, state) {
     // Draw the balls
     for (var i = 0; i < state.balls.length; i++) {
         var ball = state.balls[i];
-        drawBall(ctx, ball.x, ball.y, ball.r);
+        if (ball.fixed == true) {
+            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(255, 0, 0)');
+        }
+        else {
+            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(0, 255, 0)');
+        }
+
     }
 
-    // Draw the horizontal walls
-    for (var i = 0; i < state.horizontalWalls.length; i++) {
-        var wall = state.horizontalWalls[i];
-        drawWall(ctx, wall.x, wall.y, wall.w, wall.h, 'rgba(0, 200, 0, .5)');
-    }
-    // Draw the vertical walls
-    for (var i = 0; i < state.verticalWalls.length; i++) {
-        var wall = state.verticalWalls[i];
-        drawWall(ctx, wall.x, wall.y, wall.w, wall.h, 'rgba(200, 0, 0, .5)');
-    }
-
-    // Draw the energy meter
-    ctx.fillStyle = "rgb(0,0,0)"
-    ctx.font = "30px Arial";
-    ctx.fillText("Energy:" + Math.round(state.totalEnergy, 2) + " J" ,10,50);
 }

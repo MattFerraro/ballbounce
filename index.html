@@ -14,7 +14,7 @@
       </div>
       <div class="row">
   			<div class="col-md-12" style="background-color:rgb(240,240,240)">
-          <canvas width=600 height=600 id="canvas">
+          <canvas width=1000 height=800 id="canvas">
           </canvas>
   			</div>
 
@@ -28,12 +28,18 @@
   <script>
     var canvas = $("#canvas")[0];
     var state = initializeState();
-    var dt = 0.04;
+    var dt = .03;
 
-    setInterval(function() {
+    var id = setInterval(refresh, 10);
+
+    function refresh() {
       update(state, dt);
       draw(canvas, state);
-    }, 20);
+      // if (isNaN(state.balls[0].y)) {
+      //   clearInterval(id);
+      // }
+    }
+
 
   </script>
 </body>

@@ -25,31 +25,49 @@
 	<script type="text/javascript" src="jquery-2.1.4.min.js"></script>
 	<script type="text/javascript" src="bootstrap.min.js"></script>
   <script type="text/javascript" src="ballbounce.js"></script>
+  <script type="text/javascript" src="log_final.js"></script>
   <script>
-    var canvas = $("#canvas")[0];
-    var state = initializeState();
-    var dt = .035;
 
-    // var id = setInterval(repaint, 1);
-    // var id2 = setInterval(updateWorld, 100);
+    $(window).load(function() {
+      var canvas = $("#canvas")[0];
 
-    var startTime = Date.now();
-    var fps = 0;
-    var avg = 0;
+      var image = new Image();
+      image.src = 'logo.jpg';
+      $(image).load(function() {
+        console.log("image loaded");
+        var state = initializeState(finalPositions, image);
+        var dt = .035;
 
-    function repaint() {
-      fps++;
-      update(state, dt);
-      draw(canvas, state);
-      if (Date.now() > startTime + 1000) {
-        console.log(fps);
-        fps = 0;
-        startTime = Date.now();
-      }
-      requestAnimationFrame(repaint);
-    }
+        var startTime = Date.now();
+        var fps = 0;
+        var avg = 0;
 
-    requestAnimationFrame(repaint);
+        function repaint() {
+          // fps++;
+          draw(canvas, state);
+          update(state, dt);
+          // if (Date.now() > startTime + 1000) {
+            // console.log(fps);
+            // fps = 0;
+            // startTime = Date.now();
+          // }
+          requestAnimationFrame(repaint);
+        }
+
+        requestAnimationFrame(repaint);
+      })
+
+
+      // $(window).keydown(function(event) {
+      //   _.each(state.balls, function(ball) {
+      //     if (ball.fixed != true) {
+      //       console.log("[" + ball.id + ", " + ball.x + ", " + ball.y + "],");
+      //     }
+      //   });
+      // })
+
+    });
+
 
   </script>
 </body>

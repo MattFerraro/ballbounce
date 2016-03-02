@@ -3,7 +3,10 @@ var kSpring = 160; // Balls are modelled as springs
 var containerSize = 20;
 var numParticles = 1900;
 var SPECIAL_ID = 70;
-function initializeState() {
+var img = null;
+
+function initializeState(finalPositions, image) {
+    img = image;
     var state = {};
 
     state.room = {};
@@ -13,24 +16,16 @@ function initializeState() {
     state.balls = [];
 
     var ids = 0;
-
-    // 100 --> 60
-    // 200 --> 60
-    // 300 --> 60
-    // 400 --> 58
-    // 500 --> 51
-    // 600 --> 44
-    // 700 --> 36
-    // 800 --> 31
-    // 900 --> 29
-    // 1000 --> 25
-    // 1100 --> 22
-    // 1200 --> 21
-    // 1300 --> 19
-    // 1400 --> 17
     var particleRadius = 6;
     var wallRadius = 20;
     var sep = 13.1;
+
+    var invisibleCanvas = document.createElement('canvas');
+    invisibleCanvas.width = 2000;
+    invisibleCanvas.height = 2000;
+    invisibleCanvas.getContext('2d').drawImage(image, 0, 500, 1000, 300);
+    invisibleCanvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
+    invisibleContext = invisibleCanvas.getContext('2d');
     for (var i = 0; i < numParticles; i++) {
         var newBall = {};
         ids++;
@@ -43,6 +38,14 @@ function initializeState() {
         newBall.fy = 0;
         newBall.m = 1;
         newBall.r = particleRadius;
+        var finalPosition = finalPositions[i];
+
+        newBall.finalX = finalPosition[1];
+        newBall.finalY = finalPosition[2];
+        var pixelData = invisibleContext.getImageData(
+            Math.round(newBall.finalX), Math.round(newBall.finalY), 1, 1).data;
+        console.log("pixel data", pixelData);
+        newBall.color = 'rgb(' + pixelData[0] + ',' + pixelData[1] + ',' + pixelData[2] + ')';
         state.balls.push(newBall);
     }
 
@@ -165,10 +168,6 @@ function update(state, dt) {
             })
         }
 
-        // if (nearbyBalls.length > 0) {
-        //     // console.log(nearbyBalls);
-        // }
-
         for (var j = 0; j < nearbyBalls.length; j++) {
             // Check for collisions against all other balls
             var otherBall = nearbyBalls[j];
@@ -229,27 +228,13 @@ function update(state, dt) {
             ball.dx = -limit / dt;
         }
 
-        // if (ball.dy > maxDy) {
-        //     maxDy = ball.dy;
-        // }
-        // if (ball.dx > maxDx) {
-        //     maxDx = ball.dx;
-        // }
-
         row = Math.round(ball.y / containerSize);
         col = Math.round(ball.x / containerSize);
 
         if (row >= state.containerRows.length) {
-            console.log("OH NOEZ ROWS");
-            console.log(ball.id);
-            console.log(row, col);
-            console.log("x", ball.x);
-            console.log("y", ball.y);
             delete state.containerRows[oldRow][oldCol][ball.id];
         }
         else if (col >= state.containerRows[0].length) {
-            console.log("OH BALLS COLS");
-            console.log(row, col);
             delete state.containerRows[oldRow][oldCol][ball.id];
         }
         else if (row != oldRow || col != oldCol) {
@@ -257,24 +242,6 @@ function update(state, dt) {
             state.containerRows[row][col][ball.id] = ball;
         }
     }
-
-    // var specialId = 30;
-    // var loci = 0;
-    // var locj = 0;
-    // for (var i = 0; i < state.containerRows.length; i++) {
-    //     var row = state.containerRows[i];
-
-    //     for (var j = 0; j < row.length; j++) {
-    //         var keys = _.keys(row[j]);
-    //         if (keys.indexOf(specialId) != -1)
-    //         {
-    //             loci = i;
-    //             locj = j;
-    //         }
-    //     }
-    // }
-    // console.log("loci", loci);
-    // console.log("locj", locj);
 }
 
 function drawBall(ctx, x, y, r, color) {
@@ -282,14 +249,6 @@ function drawBall(ctx, x, y, r, color) {
     ctx.arc(x, y, r, 0, 2 * Math.PI, false);
     ctx.fillStyle = color;
     ctx.fill();
-
-    // ctx.beginPath();
-    // ctx.arc(x, y, r - 1, 0, 2 * Math.PI, false);
-    // ctx.fillStyle = color;
-    // ctx.fill();
-    // ctx.lineWidth = 5;
-    // ctx.strokeStyle = '#003300';
-    // ctx.stroke();
 }
 
 function draw(canvas, state) {
@@ -301,18 +260,12 @@ function draw(canvas, state) {
     // Draw the balls
     for (var i = 0; i < state.balls.length; i++) {
         var ball = state.balls[i];
-        if (ball.id == SPECIAL_ID) {
-            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(250, 250, 250)');
-        }
-        else if (ball.nearby == true) {
-            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(0, 100, 0)');
-        }
-        else if (ball.fixed == true) {
-            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(100, 0, 0)');
-            // continue;
+
+        if (ball.fixed == true) {
+            continue;
         }
         else {
-            drawBall(ctx, ball.x, ball.y, ball.r, 'blue');
+            drawBall(ctx, ball.x, ball.y, ball.r, ball.color);
         }
 
     }

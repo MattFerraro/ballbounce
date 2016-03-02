@@ -1,7 +1,8 @@
 var g = 9.8;  // Acceleration due to gravity
 var kSpring = 160; // Balls are modelled as springs
 var containerSize = 20;
-
+var numParticles = 1900;
+var SPECIAL_ID = 70;
 function initializeState() {
     var state = {};
 
@@ -12,7 +13,6 @@ function initializeState() {
     state.balls = [];
 
     var ids = 0;
-    var numParticles = 100;
 
     // 100 --> 60
     // 200 --> 60
@@ -29,6 +29,7 @@ function initializeState() {
     // 1300 --> 19
     // 1400 --> 17
     var particleRadius = 6;
+    var wallRadius = 20;
     var sep = 13.1;
     for (var i = 0; i < numParticles; i++) {
         var newBall = {};
@@ -36,7 +37,7 @@ function initializeState() {
         newBall.id = ids;
         newBall.x = i * sep % (state.room.width - 90) + 50;
         newBall.y = Math.floor(i * sep / (state.room.width - 90)) * sep + 70;
-        newBall.dx = 0;
+        newBall.dx = 20;
         newBall.dy = 0;
         newBall.fx = 0;
         newBall.fy = 0;
@@ -45,55 +46,55 @@ function initializeState() {
         state.balls.push(newBall);
     }
 
-    for (var i = 0; i < state.room.width / 25; i++) {
+    var size = 8;
+    var buffer = 15;
+    // floor and ceil
+    for (var i = 0; i < state.room.width / size; i++) {
         var newBall = {};
         ids++;
         newBall.id = ids;
-        newBall.x = i * 25 + 0;
-        newBall.y = state.room.height;
-        newBall.r = 35;
+        newBall.x = i * size + 0;
+        newBall.y = state.room.height - buffer;
+        newBall.r = wallRadius;
+        newBall.fixed = true;
+        state.balls.push(newBall);
+
+        var newBall = {};
+        ids++;
+        newBall.id = ids;
+        newBall.x = i * size + 0;
+        newBall.y = buffer;
+        newBall.r = wallRadius;
         newBall.fixed = true;
         state.balls.push(newBall);
     }
 
-    for (var i = 0; i < state.room.width / 25; i++) {
+    // left and right walls
+    for (var i = 0; i < state.room.height / size; i++) {
         var newBall = {};
         ids++;
         newBall.id = ids;
-        newBall.x = i * 25 + 0;
-        newBall.y = 0;
-        newBall.r = 35;
+        newBall.x = buffer;
+        newBall.y = i * size;
+        newBall.r = wallRadius;
         newBall.fixed = true;
         state.balls.push(newBall);
-    }
 
-    for (var i = 0; i < state.room.height / 25; i++) {
         var newBall = {};
         ids++;
         newBall.id = ids;
-        newBall.x = 0;
-        newBall.y = i * 25;
-        newBall.r = 35;
-        newBall.fixed = true;
-        state.balls.push(newBall);
-    }
-
-    for (var i = 0; i < state.room.height / 25; i++) {
-        var newBall = {};
-        ids++;
-        newBall.id = ids;
-        newBall.x = state.room.width;
-        newBall.y = i * 25;
-        newBall.r = 35;
+        newBall.x = state.room.width - buffer;
+        newBall.y = i * size;
+        newBall.r = wallRadius;
         newBall.fixed = true;
         state.balls.push(newBall);
     }
 
     state.containerRows = [];
-    for (var j = 0; j <= state.room.height / containerSize; j++) {
+    for (var j = 0; j <= state.room.height / containerSize + 2; j++) {
         var containerCols = [];
 
-        for (var i = 0; i <= state.room.width / containerSize; i++) {
+        for (var i = 0; i <= state.room.width / containerSize + 2; i++) {
             var container = {};
             containerCols.push(container);
         }
@@ -104,15 +105,9 @@ function initializeState() {
     for (var i = 0; i < state.balls.length; i++) {
         // Put each ball into an initial container
         var ball = state.balls[i];
-        var row = Math.floor(ball.y / containerSize);
-        var col = Math.floor(ball.x / containerSize);
+        var row = Math.round(ball.y / containerSize);
+        var col = Math.round(ball.x / containerSize);
         var container = state.containerRows[row][col];
-        if (ball.fixed == true) {
-            console.log("row, col", row, col, "fixed");
-        }
-        else {
-            console.log("row, col", row, col, ball.id);
-        }
         container[ball.id] = ball;
     }
 
@@ -124,9 +119,11 @@ function update(state, dt) {
     var col = 0;
     var oldRow = 0;
     var oldCol = 0;
+    var ball = null;
+    var nearbyBalls = [];
 
     for (var i = 0; i < state.balls.length; i++) {
-        var ball = state.balls[i];
+        ball = state.balls[i];
 
         if (ball.fixed == true) {
             continue;
@@ -137,21 +134,29 @@ function update(state, dt) {
 
         ball.fy += g * ball.m;
 
-        row = Math.floor(ball.y / containerSize);
-        col = Math.floor(ball.x / containerSize);
+        row = Math.round(ball.y / containerSize);
+        col = Math.round(ball.x / containerSize);
 
         // Check for collisions against all balls in nearby cells
-        var nearbyBalls = [];
+        nearbyBalls = [];
         for (var x = -1; x <= 1; x++) {
             for (var y = -1; y <= 1; y++) {
+                if (row + x >= state.containerRows.length || row + x < 0) {
+                    continue;
+                }
+                if (col + y >= state.containerRows[0].length || col + y < 0) {
+                    continue;
+                }
                 var container = state.containerRows[row + x][col + y];
                 var values = _.values(container);
                 for (var k = 0; k < values.length; k++) {
-                    nearbyBalls.push(values[k]);
+                    if (values[k].id != ball.id) {
+                        nearbyBalls.push(values[k]);
+                    }
                 }
             }
         }
-        if (ball.id == 11) {
+        if (ball.id == SPECIAL_ID) {
             _.each(state.balls, function(b) {
                 b.nearby = false;
             })
@@ -164,27 +169,25 @@ function update(state, dt) {
         //     // console.log(nearbyBalls);
         // }
 
-        for (var j = 0; j < state.balls.length; j++) {
+        for (var j = 0; j < nearbyBalls.length; j++) {
             // Check for collisions against all other balls
-            if (j != i) {
-                var otherBall = state.balls[j];
-                var deltaX = otherBall.x - ball.x;
-                var deltaY = otherBall.y - ball.y;
-                var distSquared = deltaX * deltaX + deltaY * deltaY;
-                var minDist = ball.r + otherBall.r;
-                var minDistSquared = minDist * minDist;
+            var otherBall = nearbyBalls[j];
+            var deltaX = otherBall.x - ball.x;
+            var deltaY = otherBall.y - ball.y;
+            var distSquared = deltaX * deltaX + deltaY * deltaY;
+            var minDist = ball.r + otherBall.r;
+            var minDistSquared = minDist * minDist;
 
-                if (distSquared < minDistSquared) {
-                    // Cool, a ball-on-ball collision is happening
-                    var compressionDist = minDist - Math.sqrt(distSquared);
-                    var fSpring = compressionDist * kSpring;
-                    var alpha = Math.atan2(deltaY, deltaX);
-                    var fSpringX = Math.cos(alpha) * fSpring;
-                    var fSpringY = Math.sin(alpha) * fSpring;
+            if (distSquared < minDistSquared) {
+                // Cool, a ball-on-ball collision is happening
+                var compressionDist = minDist - Math.sqrt(distSquared);
+                var fSpring = compressionDist * kSpring;
+                var alpha = Math.atan2(deltaY, deltaX);
+                var fSpringX = Math.cos(alpha) * fSpring;
+                var fSpringY = Math.sin(alpha) * fSpring;
 
-                    ball.fx -= fSpringX;
-                    ball.fy -= fSpringY;
-                }
+                ball.fx -= fSpringX;
+                ball.fy -= fSpringY;
             }
         }
     }
@@ -196,8 +199,8 @@ function update(state, dt) {
             continue;
         }
 
-        oldRow = Math.floor(ball.y / containerSize);
-        oldCol = Math.floor(ball.x / containerSize);
+        oldRow = Math.round(ball.y / containerSize);
+        oldCol = Math.round(ball.x / containerSize);
 
         ball.fx -= 0.05 * ball.dx;
         ball.fy -= 0.05 * ball.dy;
@@ -211,9 +214,19 @@ function update(state, dt) {
         ball.x += ball.dx * dt;
         ball.y += ball.dy * dt;
 
-        if (ball.dy > 10000 || ball.dx > 10000) {
-            ball.dy = 0;
-            ball.dx = 0;
+        // enforce an absolute speed limit
+        var limit = 5;
+        if (ball.dy * dt > limit) {
+            ball.dy = limit / dt;
+        }
+        if (ball.dy * dt < -limit) {
+            ball.dy = -limit / dt;
+        }
+        if (ball.dx * dt > limit) {
+            ball.dx = limit / dt;
+        }
+        if (ball.dx * dt < -limit) {
+            ball.dx = -limit / dt;
         }
 
         // if (ball.dy > maxDy) {
@@ -223,10 +236,23 @@ function update(state, dt) {
         //     maxDx = ball.dx;
         // }
 
-        row = Math.floor(ball.y / containerSize);
-        col = Math.floor(ball.x / containerSize);
+        row = Math.round(ball.y / containerSize);
+        col = Math.round(ball.x / containerSize);
 
-        if (row != oldRow || col != oldCol) {
+        if (row >= state.containerRows.length) {
+            console.log("OH NOEZ ROWS");
+            console.log(ball.id);
+            console.log(row, col);
+            console.log("x", ball.x);
+            console.log("y", ball.y);
+            delete state.containerRows[oldRow][oldCol][ball.id];
+        }
+        else if (col >= state.containerRows[0].length) {
+            console.log("OH BALLS COLS");
+            console.log(row, col);
+            delete state.containerRows[oldRow][oldCol][ball.id];
+        }
+        else if (row != oldRow || col != oldCol) {
             delete state.containerRows[oldRow][oldCol][ball.id];
             state.containerRows[row][col][ball.id] = ball;
         }
@@ -275,14 +301,15 @@ function draw(canvas, state) {
     // Draw the balls
     for (var i = 0; i < state.balls.length; i++) {
         var ball = state.balls[i];
-        if (ball.fixed == true) {
-            continue;
-        }
-        else if (ball.id == 11) {
-            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(0, 0, 0)');
+        if (ball.id == SPECIAL_ID) {
+            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(250, 250, 250)');
         }
         else if (ball.nearby == true) {
             drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(0, 100, 0)');
+        }
+        else if (ball.fixed == true) {
+            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(100, 0, 0)');
+            // continue;
         }
         else {
             drawBall(ctx, ball.x, ball.y, ball.r, 'blue');

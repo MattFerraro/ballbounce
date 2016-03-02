@@ -44,7 +44,7 @@ function initializeState(finalPositions, image) {
         newBall.finalY = finalPosition[2];
         var pixelData = invisibleContext.getImageData(
             Math.round(newBall.finalX), Math.round(newBall.finalY), 1, 1).data;
-        console.log("pixel data", pixelData);
+        // console.log("pixel data", pixelData);
         newBall.color = 'rgb(' + pixelData[0] + ',' + pixelData[1] + ',' + pixelData[2] + ')';
         state.balls.push(newBall);
     }
@@ -254,7 +254,7 @@ function drawBall(ctx, x, y, r, color) {
 function draw(canvas, state) {
     var ctx = canvas.getContext("2d");
     // Clear the background
-    ctx.fillStyle = "rgb(200,200,200)";
+    ctx.fillStyle = "rgb(51, 133, 255)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw the balls

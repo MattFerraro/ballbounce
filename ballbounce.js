@@ -12,21 +12,37 @@ function initializeState() {
     state.balls = [];
 
     var ids = 0;
-    for (var i = 0; i < 20; i++) {
-        for (var j = 0; j < 26; j++) {
-            var newBall = {};
-            ids++;
-            newBall.id = ids;
-            newBall.x = i * 20 + 50 - (j % 2) * 10;
-            newBall.y = j * 20 + 40;
-            newBall.dx = 10;
-            newBall.dy = 0;
-            newBall.fx = 0;
-            newBall.fy = 0;
-            newBall.m = 1;
-            newBall.r = 8;
-            state.balls.push(newBall);
-        }
+    var numParticles = 100;
+
+    // 100 --> 60
+    // 200 --> 60
+    // 300 --> 60
+    // 400 --> 58
+    // 500 --> 51
+    // 600 --> 44
+    // 700 --> 36
+    // 800 --> 31
+    // 900 --> 29
+    // 1000 --> 25
+    // 1100 --> 22
+    // 1200 --> 21
+    // 1300 --> 19
+    // 1400 --> 17
+    var particleRadius = 6;
+    var sep = 13.1;
+    for (var i = 0; i < numParticles; i++) {
+        var newBall = {};
+        ids++;
+        newBall.id = ids;
+        newBall.x = i * sep % (state.room.width - 90) + 50;
+        newBall.y = Math.floor(i * sep / (state.room.width - 90)) * sep + 70;
+        newBall.dx = 0;
+        newBall.dy = 0;
+        newBall.fx = 0;
+        newBall.fy = 0;
+        newBall.m = 1;
+        newBall.r = particleRadius;
+        state.balls.push(newBall);
     }
 
     for (var i = 0; i < state.room.width / 25; i++) {
@@ -74,10 +90,10 @@ function initializeState() {
     }
 
     state.containerRows = [];
-    for (var j = 0; j < state.room.height / containerSize; j++) {
+    for (var j = 0; j <= state.room.height / containerSize; j++) {
         var containerCols = [];
 
-        for (var i = 0; i < state.room.width / containerSize; i++) {
+        for (var i = 0; i <= state.room.width / containerSize; i++) {
             var container = {};
             containerCols.push(container);
         }
@@ -90,6 +106,13 @@ function initializeState() {
         var ball = state.balls[i];
         var row = Math.floor(ball.y / containerSize);
         var col = Math.floor(ball.x / containerSize);
+        var container = state.containerRows[row][col];
+        if (ball.fixed == true) {
+            console.log("row, col", row, col, "fixed");
+        }
+        else {
+            console.log("row, col", row, col, ball.id);
+        }
         container[ball.id] = ball;
     }
 
@@ -127,6 +150,14 @@ function update(state, dt) {
                     nearbyBalls.push(values[k]);
                 }
             }
+        }
+        if (ball.id == 11) {
+            _.each(state.balls, function(b) {
+                b.nearby = false;
+            })
+            _.each(nearbyBalls, function(b) {
+                b.nearby = true;
+            })
         }
 
         // if (nearbyBalls.length > 0) {
@@ -168,8 +199,8 @@ function update(state, dt) {
         oldRow = Math.floor(ball.y / containerSize);
         oldCol = Math.floor(ball.x / containerSize);
 
-        ball.fx -= 0.02 * ball.dx;
-        ball.fy -= 0.02 * ball.dy;
+        ball.fx -= 0.05 * ball.dx;
+        ball.fy -= 0.05 * ball.dy;
 
         var ddx = ball.fx / ball.m;
         var ddy = ball.fy / ball.m;
@@ -201,23 +232,23 @@ function update(state, dt) {
         }
     }
 
-    var specialId = 30;
-    var loci = 0;
-    var locj = 0;
-    for (var i = 0; i < state.containerRows.length; i++) {
-        var row = state.containerRows[i];
+    // var specialId = 30;
+    // var loci = 0;
+    // var locj = 0;
+    // for (var i = 0; i < state.containerRows.length; i++) {
+    //     var row = state.containerRows[i];
 
-        for (var j = 0; j < row.length; j++) {
-            var keys = _.keys(row[j]);
-            if (keys.indexOf(specialId) != -1)
-            {
-                loci = i;
-                locj = j;
-            }
-        }
-    }
-    console.log("loci", loci);
-    console.log("locj", locj);
+    //     for (var j = 0; j < row.length; j++) {
+    //         var keys = _.keys(row[j]);
+    //         if (keys.indexOf(specialId) != -1)
+    //         {
+    //             loci = i;
+    //             locj = j;
+    //         }
+    //     }
+    // }
+    // console.log("loci", loci);
+    // console.log("locj", locj);
 }
 
 function drawBall(ctx, x, y, r, color) {
@@ -225,9 +256,14 @@ function drawBall(ctx, x, y, r, color) {
     ctx.arc(x, y, r, 0, 2 * Math.PI, false);
     ctx.fillStyle = color;
     ctx.fill();
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = '#003300';
-    ctx.stroke();
+
+    // ctx.beginPath();
+    // ctx.arc(x, y, r - 1, 0, 2 * Math.PI, false);
+    // ctx.fillStyle = color;
+    // ctx.fill();
+    // ctx.lineWidth = 5;
+    // ctx.strokeStyle = '#003300';
+    // ctx.stroke();
 }
 
 function draw(canvas, state) {
@@ -240,13 +276,16 @@ function draw(canvas, state) {
     for (var i = 0; i < state.balls.length; i++) {
         var ball = state.balls[i];
         if (ball.fixed == true) {
-            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(255, 0, 0)');
+            continue;
         }
-        else if (ball.id == 30) {
+        else if (ball.id == 11) {
             drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(0, 0, 0)');
         }
+        else if (ball.nearby == true) {
+            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(0, 100, 0)');
+        }
         else {
-            drawBall(ctx, ball.x, ball.y, ball.r, 'rgb(0, 255, 0)');
+            drawBall(ctx, ball.x, ball.y, ball.r, 'blue');
         }
 
     }

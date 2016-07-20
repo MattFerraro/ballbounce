@@ -23,8 +23,8 @@ function initializeState(finalPositions, image) {
     var invisibleCanvas = document.createElement('canvas');
     invisibleCanvas.width = 2000;
     invisibleCanvas.height = 2000;
-    invisibleCanvas.getContext('2d').drawImage(image, 0, 500, 1000, 300);
-    invisibleCanvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
+    invisibleCanvas.getContext('2d').drawImage(image, 55, 500, 850, 300);
+    // invisibleCanvas.getContext('2d').drawImage(image, 20, 0, image.width, image.height);
     invisibleContext = invisibleCanvas.getContext('2d');
     for (var i = 0; i < numParticles; i++) {
         var newBall = {};
@@ -254,7 +254,7 @@ function drawBall(ctx, x, y, r, color) {
 function draw(canvas, state) {
     var ctx = canvas.getContext("2d");
     // Clear the background
-    ctx.fillStyle = "rgb(51, 133, 255)";
+    ctx.fillStyle = "rgb(190, 190, 190)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw the balls
